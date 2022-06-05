@@ -1,0 +1,19 @@
+{
+    "name": "pcore/routing",
+    "type": "library",
+    "homepage": "https://github.com/pcore-framework/routing",
+    "authors": [
+        {
+            "name": "Magomedcoder",
+            "email": "info@magomedcoder.ru"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "PCore\\Routing\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.0"
+    }
+}
