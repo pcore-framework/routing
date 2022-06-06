@@ -13,7 +13,7 @@ use function sprintf;
 /**
  * Class Router
  * @package PCore\Routing
- * https://github.com/pcore-framework/routing
+ * @github https://github.com/pcore-framework/routing
  */
 class Router
 {

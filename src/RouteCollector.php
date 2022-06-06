@@ -13,7 +13,7 @@ use function preg_match;
 /**
  * Class RouteCollector
  * @package PCore\Routing
- * https://github.com/pcore-framework/routing
+ * @github https://github.com/pcore-framework/routing
  */
 class RouteCollector
 {
