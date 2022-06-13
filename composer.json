@@ -1,6 +1,7 @@
 {
     "name": "pcore/routing",
     "type": "library",
+    "license": "MIT",
     "homepage": "https://github.com/pcore-framework/routing",
     "authors": [
         {
