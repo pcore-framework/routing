@@ -20,7 +20,7 @@ class Controller
      * @param array $middlewares
      */
     public function __construct(
-        public string $prefix = '',
+        public string $prefix = '/',
         public array $middlewares = []
     )
     {
