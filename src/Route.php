@@ -73,7 +73,7 @@ class Route
         string $path,
         protected string|Closure|array $action,
         protected Router $router,
-        string $domain = ''
+        string $domain = '',
     )
     {
         $this->setPath($path)->domain($domain);
@@ -119,9 +119,9 @@ class Route
      */
     public function domain(string $domain): Route
     {
-        if ('' !== $domain) {
+        if ($domain !== '') {
             $this->domain = $domain;
-            $this->compiledDomain = '#^' . str_replace(['.', '*',], ['\.', '(.+?)',], $domain) . '$#iU';
+            $this->compiledDomain = '#^' . str_replace(['.', '*'], ['\.', '(.+?)'], $domain) . '$#iU';
         }
         return $this;
     }

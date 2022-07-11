@@ -60,7 +60,7 @@ class RouteCollector
         $map = $this->routes[$method] ?? throw new MethodNotAllowedException('Метод не разрешен: ' . $method, 405);
         $routes = $map[''] ?? [];
         foreach ($map as $domain => $item) {
-            if ('' === $domain) {
+            if ($domain === '') {
                 continue;
             }
             if (preg_match($domain, $request->getUri()->getHost())) {
