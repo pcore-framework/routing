@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PCore\Routing;
 
 use Closure;
+use InvalidArgumentException;
 use function array_merge;
 use function array_unique;
 use function sprintf;
@@ -18,54 +19,25 @@ class Router
 {
 
     /**
-     * Группировка промежуточного программного обеспечения
-     *
-     * @var array
-     */
-    protected array $middlewares = [];
-
-    /**
-     * Префикс
-     *
-     * @var string
-     */
-    protected string $prefix = '';
-
-    /**
-     * @var string
-     */
-    protected string $namespace = '';
-
-    /**
-     * Доменное имя
-     *
-     * @var string
-     */
-    protected string $domain = '';
-
-    /**
-     * @var array
-     */
-    protected array $patterns = [];
-
-    /**
      * @var RouteCollector
      */
     protected RouteCollector $routeCollector;
 
     /**
-     * @param array $options
+     * @param string $prefix
+     * @param array $patterns
+     * @param string $namespace
+     * @param array $middlewares
      * @param RouteCollector|null $routeCollector
      */
-    public function __construct(array $options = [], ?RouteCollector $routeCollector = null)
+    public function __construct(
+        protected string $prefix = '',
+        protected array $patterns = [],
+        protected string $namespace = '',
+        protected array $middlewares = [],
+        ?RouteCollector $routeCollector = null
+    )
     {
-        if ($options !== []) {
-            foreach ($options as $key => $value) {
-                if (property_exists($this, $key)) {
-                    $this->{$key} = $value;
-                }
-            }
-        }
         $this->routeCollector = $routeCollector ?? new RouteCollector();
     }
 
@@ -159,7 +131,7 @@ class Router
      * @param string $controller
      * @return string
      */
-    protected function longNameController(string $controller): string
+    protected function formatController(string $controller): string
     {
         return trim($this->namespace . '\\' . ltrim($controller, '\\'), '\\');
     }
@@ -174,16 +146,19 @@ class Router
      */
     public function request(string $path, array|Closure|string $action, array $methods = ['GET', 'HEAD', 'POST']): Route
     {
-        if (is_array($action)) {
-            [$controller, $action] = $action;
-            $action = [$this->longNameController($controller), $action];
-        }
         if (is_string($action)) {
-            $action = $this->longNameController($action);
+            $action = explode('::', $this->formatController($action), 2);
         }
-        $route = new Route($methods, $this->prefix . $path, $action, $this, $this->domain);
-        $this->routeCollector->add($route);
-        return $route;
+        if ($action instanceof Closure || count($action) === 2) {
+            if (is_array($action)) {
+                [$controller, $action] = $action;
+                $action = [$this->formatController($controller), $action];
+            }
+            $route = new Route($methods, $this->prefix . $path, $action, $this->patterns);
+            $this->routeCollector->add($route->middlewares($this->middlewares));
+            return $route;
+        }
+        throw new InvalidArgumentException('Недопустимое действие маршрута: ' . $path);
     }
 
     /**
@@ -197,38 +172,6 @@ class Router
     }
 
     /**
-     * @return array
-     */
-    public function getMiddlewares(): array
-    {
-        return $this->middlewares;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPrefix(): string
-    {
-        return $this->prefix;
-    }
-
-    /**
-     * @return string
-     */
-    public function getNamespace(): string
-    {
-        return $this->namespace;
-    }
-
-    /**
-     * @return array
-     */
-    public function getPatterns(): array
-    {
-        return $this->patterns;
-    }
-
-    /**
      * Добавление промежуточного программного обеспечения
      *
      * @param string ...$middlewares
@@ -238,25 +181,6 @@ class Router
     {
         $new = clone $this;
         $new->middlewares = array_unique([...$this->middlewares, ...$middlewares]);
-        return $new;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDomain(): string
-    {
-        return $this->domain;
-    }
-
-    /**
-     * @param string $domain
-     * @return Router
-     */
-    public function domain(string $domain): Router
-    {
-        $new = clone $this;
-        $new->domain = $domain;
         return $new;
     }
 

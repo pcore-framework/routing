@@ -7,7 +7,6 @@ namespace PCore\Routing;
 use PCore\Routing\Exceptions\{MethodNotAllowedException, RouteNotFoundException};
 use Psr\Http\Message\ServerRequestInterface;
 use function array_key_exists;
-use function is_null;
 use function preg_match;
 
 /**
@@ -33,9 +32,8 @@ class RouteCollector
      */
     public function add(Route $route): void
     {
-        $domain = $route->getCompiledDomain();
         foreach ($route->getMethods() as $method) {
-            $this->routes[$method][$domain][] = $route;
+            $this->routes[$method][] = $route;
         }
     }
 
@@ -53,39 +51,29 @@ class RouteCollector
      * @throws MethodNotAllowedException
      * @throws RouteNotFoundException
      */
-    public function resolve(ServerRequestInterface $request): Route
+    public function resolveRequest(ServerRequestInterface $request): Route
     {
         $path = '/' . trim($request->getUri()->getPath(), '/');
         $method = $request->getMethod();
-        $map = $this->routes[$method] ?? throw new MethodNotAllowedException('Метод не разрешен: ' . $method, 405);
-        $routes = $map[''] ?? [];
-        foreach ($map as $domain => $item) {
-            if ($domain === '') {
-                continue;
-            }
-            if (preg_match($domain, $request->getUri()->getHost())) {
-                $routes = array_merge($item, $routes);
-            }
-        }
-        $resolvedRoute = null;
-        /* @var Route $route */
+        return $this->resolve($method, $path);
+    }
+
+    public function resolve(string $method, string $path)
+    {
+        $routes = $this->routes[$method] ?? throw new MethodNotAllowedException('Метод не разрешен: ' . $method, 405);
         foreach ($routes as $route) {
             if ($route->getPath() === $path) {
+                return clone $route;
+            }
+            if (($compiledPath = $route->getCompiledPath()) && preg_match($compiledPath, $path, $match)) {
                 $resolvedRoute = clone $route;
-            } else {
-                $regexp = $route->getRegexp();
-                if (!is_null($regexp) && preg_match($regexp, $path, $match)) {
-                    $resolvedRoute = clone $route;
-                    if (!empty($match)) {
-                        foreach ($route->getParameters() as $key => $value) {
-                            if (array_key_exists($key, $match)) {
-                                $resolvedRoute->setParameter($key, trim($match[$key], '/'));
-                            }
+                if (!empty($match)) {
+                    foreach ($route->getParameters() as $key => $value) {
+                        if (array_key_exists($key, $match)) {
+                            $resolvedRoute->setParameter($key, $match[$key]);
                         }
                     }
                 }
-            }
-            if (!is_null($resolvedRoute)) {
                 return $resolvedRoute;
             }
         }

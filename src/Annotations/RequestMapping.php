@@ -27,13 +27,11 @@ class RequestMapping implements MappingInterface
      * @param string $path путь
      * @param array|string[] $methods метод
      * @param array $middlewares промежуточный слой
-     * @param string $domain доменное имя
      */
     public function __construct(
         public string $path = '/',
         array $methods = [],
-        public array $middlewares = [],
-        public string $domain = ''
+        public array $middlewares = []
     )
     {
         if (!empty($methods)) {

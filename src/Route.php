@@ -20,7 +20,9 @@ class Route
     /**
      * Правила по умолчанию
      */
-    protected const DEFAULT_PATTERN = '[^\/]+';
+    protected const DEFAULT_VARIABLE_REGEX = '[^\/]+';
+
+    protected const VARIABLE_REGEX = '\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*(?::\s*([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}';
 
     /**
      * Путь
@@ -30,6 +32,11 @@ class Route
     protected string $path;
 
     /**
+     * @var string
+     */
+    protected string $compiledPath = '';
+
+    /**
      * Параметры маршрутизации
      *
      * @var array
@@ -37,109 +44,37 @@ class Route
     protected array $parameters = [];
 
     /**
-     * @var string|null
-     */
-    protected ?string $regexp = null;
-
-    /**
+     * Промежуточное ПО маршрутизации
+     *
      * @var array
      */
     protected array $middlewares = [];
 
     /**
-     * @var string
-     */
-    protected string $compiledDomain = '';
-
-    /**
-     * @var array
-     */
-    protected array $withoutMiddleware = [];
-
-    /**
-     * @var string
-     */
-    protected string $domain = '';
-
-    /**
      * @param array $methods
      * @param string $path
-     * @param string|Closure|array $action
-     * @param Router $router
-     * @param string $domain
+     * @param Closure|array $action
+     * @param array $patterns
      */
     public function __construct(
         protected array $methods,
         string $path,
-        protected string|Closure|array $action,
-        protected Router $router,
-        string $domain = '',
+        protected Closure|array $action,
+        protected array $patterns = []
     )
     {
-        $this->setPath($path)->domain($domain);
-    }
-
-    /**
-     * @param Router $router
-     */
-    public function setRouter(Router $router): void
-    {
-        $this->router = $router;
-    }
-
-    /**
-     * @param string $path
-     * @return $this
-     */
-    public function setPath(string $path): Route
-    {
-        $this->path = '/' . trim($path, '/');
-        $regexp = preg_replace_callback('/<(\w+)>/', function ($matches) {
-            [, $name] = $matches;
+        $this->path = $path = '/' . trim($path, '/');
+        $compiledPath = preg_replace_callback(sprintf('#%s#', self::VARIABLE_REGEX), function ($matches) {
+            $name = $matches[1];
+            if (isset($matches[2])) {
+                $this->patterns[$name] = $matches[2];
+            }
             $this->setParameter($name, null);
             return sprintf('(?P<%s>%s)', $name, $this->getPattern($name));
-        }, $this->path);
-        if ($regexp !== $this->path) {
-            $this->regexp = sprintf('#^%s$#iU', $regexp);
+        }, $path);
+        if ($compiledPath !== $path) {
+            $this->compiledPath = sprintf('#^%s$#iU', $compiledPath);
         }
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCompiledDomain(): string
-    {
-        return $this->compiledDomain;
-    }
-
-    /**
-     * @param string $domain
-     * @return $this
-     */
-    public function domain(string $domain): Route
-    {
-        if ($domain !== '') {
-            $this->domain = $domain;
-            $this->compiledDomain = '#^' . str_replace(['.', '*'], ['\.', '(.+?)'], $domain) . '$#iU';
-        }
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDomain(): string
-    {
-        return $this->domain;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getRegexp(): ?string
-    {
-        return $this->regexp;
     }
 
     /**
@@ -150,7 +85,7 @@ class Route
      */
     public function getPattern(string $key): string
     {
-        return $this->getPatterns()[$key] ?? static::DEFAULT_PATTERN;
+        return $this->getPatterns()[$key] ?? static::DEFAULT_VARIABLE_REGEX;
     }
 
     /**
@@ -158,7 +93,15 @@ class Route
      */
     public function getPatterns(): array
     {
-        return $this->router->getPatterns();
+        return $this->patterns;
+    }
+
+    /**
+     * Возвращает скомпилированное регулярное выражение
+     */
+    public function getCompiledPath(): string
+    {
+        return $this->compiledPath;
     }
 
     /**
@@ -228,18 +171,8 @@ class Route
      */
     public function withoutMiddleware(string $middleware): Route
     {
-        $this->withoutMiddleware[] = $middleware;
-        return $this;
-    }
-
-    /**
-     * @param string $method
-     * @return $this
-     */
-    public function addMethod(string $method): static
-    {
-        if (!in_array($method, $this->methods)) {
-            $this->methods[] = $method;
+        if (($key = array_search($middleware, $this->middlewares)) !== false) {
+            unset($this->middlewares[$key]);
         }
         return $this;
     }
@@ -273,8 +206,7 @@ class Route
      */
     public function getMiddlewares(): array
     {
-        $middlewares = array_unique([...($this->router?->getMiddlewares() ?? []), ...$this->middlewares]);
-        return array_diff($middlewares, $this->withoutMiddleware);
+        return $this->middlewares;
     }
 
 }

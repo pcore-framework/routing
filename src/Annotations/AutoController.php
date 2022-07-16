@@ -19,11 +19,13 @@ class AutoController
      * @param string $prefix
      * @param array $middlewares
      * @param array $methods
+     * @param array $patterns
      */
     public function __construct(
         public string $prefix = '',
         public array $middlewares = [],
-        public array $methods = ['GET', 'POST', 'HEAD']
+        public array $methods = ['GET', 'POST', 'HEAD'],
+        public array $patterns = []
     )
     {
     }
