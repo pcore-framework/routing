@@ -71,10 +71,8 @@ class Route
             }
             $this->setParameter($name, null);
             return sprintf('(?P<%s>%s)', $name, $this->getPattern($name));
-        }, $path);
-        if ($compiledPath !== $path) {
-            $this->compiledPath = sprintf('#^%s$#iU', $compiledPath);
-        }
+        }, str_replace(['.', '+', '*'], ['\.', '\+', '\*'], $path));
+        $this->compiledPath = sprintf('#^%s$#iU', $compiledPath);
     }
 
     /**
