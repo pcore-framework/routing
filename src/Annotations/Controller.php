@@ -18,10 +18,12 @@ class Controller
     /**
      * @param string $prefix
      * @param array $middlewares
+     * @param array $patterns
      */
     public function __construct(
         public string $prefix = '/',
-        public array $middlewares = []
+        public array $middlewares = [],
+        public array $patterns = []
     )
     {
     }
