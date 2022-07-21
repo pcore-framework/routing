@@ -25,13 +25,6 @@ class Route
     protected const VARIABLE_REGEX = '\{\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*(?::\s*([^{}]*(?:\{(?-1)\}[^{}]*)*))?\}';
 
     /**
-     * Путь
-     *
-     * @var string
-     */
-    protected string $path;
-
-    /**
      * @var string
      */
     protected string $compiledPath = '';
@@ -43,27 +36,15 @@ class Route
      */
     protected array $parameters = [];
 
-    /**
-     * Промежуточное ПО маршрутизации
-     *
-     * @var array
-     */
-    protected array $middlewares = [];
-
-    /**
-     * @param array $methods
-     * @param string $path
-     * @param Closure|array $action
-     * @param array $patterns
-     */
     public function __construct(
         protected array $methods,
-        string $path,
+        protected string $path,
         protected Closure|array $action,
-        protected array $patterns = []
+        protected array $patterns = [],
+        protected array $middlewares = []
     )
     {
-        $this->path = $path = '/' . trim($path, '/');
+        $this->path = '/' . trim($this->path, '/');
         $compiledPath = preg_replace_callback(sprintf('#%s#', self::VARIABLE_REGEX), function ($matches) {
             $name = $matches[1];
             if (isset($matches[2])) {
@@ -71,7 +52,7 @@ class Route
             }
             $this->setParameter($name, null);
             return sprintf('(?P<%s>%s)', $name, $this->getPattern($name));
-        }, str_replace(['.', '+', '*'], ['\.', '\+', '\*'], $path));
+        }, str_replace(['.', '+', '*'], ['\.', '\+', '\*'], $this->path));
         $this->compiledPath = sprintf('#^%s$#iU', $compiledPath);
     }
 
@@ -106,10 +87,10 @@ class Route
      * Задать один параметр маршрутизации
      *
      * @param string $name
-     * @param $value
+     * @param mixed $value
      * @return void
      */
-    public function setParameter(string $name, $value): void
+    public function setParameter(string $name, mixed $value): void
     {
         $this->parameters[$name] = $value;
     }
@@ -152,12 +133,9 @@ class Route
      * @param string|array $middlewares
      * @return $this
      */
-    public function middlewares(string|array $middlewares): Route
+    public function middleware(string ...$middlewares): Route
     {
-        if (is_string($middlewares)) {
-            $middlewares = [$middlewares];
-        }
-        $this->middlewares = $middlewares;
+        $this->middlewares = array_unique([...$this->middlewares, $middlewares]);
         return $this;
     }
 

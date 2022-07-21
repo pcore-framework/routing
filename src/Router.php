@@ -18,27 +18,15 @@ use function sprintf;
 class Router
 {
 
-    /**
-     * @var RouteCollector
-     */
-    protected RouteCollector $routeCollector;
-
-    /**
-     * @param string $prefix
-     * @param array $patterns
-     * @param string $namespace
-     * @param array $middlewares
-     * @param RouteCollector|null $routeCollector
-     */
     public function __construct(
         protected string $prefix = '',
         protected array $patterns = [],
         protected string $namespace = '',
         protected array $middlewares = [],
-        ?RouteCollector $routeCollector = null
+        protected ?RouteCollector $routeCollector = null
     )
     {
-        $this->routeCollector = $routeCollector ?? new RouteCollector();
+        $this->routeCollector ??= new RouteCollector();
     }
 
     /**
@@ -154,8 +142,8 @@ class Router
                 [$controller, $action] = $action;
                 $action = [$this->formatController($controller), $action];
             }
-            $route = new Route($methods, $this->prefix . $path, $action, $this->patterns);
-            $this->routeCollector->add($route->middlewares($this->middlewares));
+            $route = new Route($methods, $this->prefix . $path, $action, $this->patterns, $this->middlewares);
+            $this->routeCollector->add($route);
             return $route;
         }
         throw new InvalidArgumentException('Недопустимое действие маршрута: ' . $path);
