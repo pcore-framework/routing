@@ -19,7 +19,7 @@
     ],
     "require": {
         "php": "^8.0",
-        "pcore/http-message": "dev-main"
+        "pcore/http-message": "1.0.*"
     },
     "autoload": {
         "psr-4": {
