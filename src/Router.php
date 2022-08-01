@@ -135,16 +135,16 @@ class Router
     public function request(string $path, array|Closure|string $action, array $methods = ['GET', 'HEAD', 'POST']): Route
     {
         if (is_string($action)) {
-            $action = explode('::', $this->formatController($action), 2);
+            $action = str_contains($action, '::')
+                ? explode('::', $this->formatController($action), 2)
+                : [$this->formatController($action), '__invoke'];
         }
         if ($action instanceof Closure || count($action) === 2) {
             if (is_array($action)) {
                 [$controller, $action] = $action;
                 $action = [$this->formatController($controller), $action];
             }
-            $route = new Route($methods, $this->prefix . $path, $action, $this->patterns, $this->middlewares);
-            $this->routeCollector->add($route);
-            return $route;
+            return $this->routeCollector->addRoute(new Route($methods, $this->prefix . $path, $action, $this->patterns, $this->middlewares));
         }
         throw new InvalidArgumentException('Недопустимое действие маршрута: ' . $path);
     }
@@ -180,6 +180,20 @@ class Router
     {
         $new = clone $this;
         $new->patterns = array_merge($this->patterns, $patterns);
+        return $new;
+    }
+
+    /**
+     * Правило одной переменной
+     *
+     * @param string $name
+     * @param string $pattern
+     * @return Router
+     */
+    public function where(string $name, string $pattern): Router
+    {
+        $new = clone $this;
+        $new->patterns[$name] = $pattern;
         return $new;
     }
 

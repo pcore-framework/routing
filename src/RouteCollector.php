@@ -28,15 +28,15 @@ class RouteCollector
      * Добавление маршрута
      *
      * @param Route $route
-     * @return void
+     * @return Route
      */
-    public function add(Route $route): void
+    public function addRoute(Route $route): Route
     {
         foreach ($route->getMethods() as $method) {
             $this->routes[$method][] = $route;
         }
+        return $route;
     }
-
     /**
      * @return array
      */
@@ -58,6 +58,11 @@ class RouteCollector
         return $this->resolve($method, $path);
     }
 
+    /**
+     * @param string $method
+     * @param string $path
+     * @return mixed
+     */
     public function resolve(string $method, string $path)
     {
         $routes = $this->routes[$method] ?? throw new MethodNotAllowedException('Метод не разрешен: ' . $method, 405);

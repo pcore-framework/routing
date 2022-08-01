@@ -44,7 +44,6 @@ class Route
         protected array $middlewares = []
     )
     {
-        $this->path = '/' . trim($this->path, '/');
         $compiledPath = preg_replace_callback(sprintf('#%s#', self::VARIABLE_REGEX), function ($matches) {
             $name = $matches[1];
             if (isset($matches[2])) {
@@ -52,7 +51,7 @@ class Route
             }
             $this->setParameter($name, null);
             return sprintf('(?P<%s>%s)', $name, $this->getPattern($name));
-        }, str_replace(['.', '+', '*'], ['\.', '\+', '\*'], $this->path));
+        }, $this->path = '/' . trim($this->path, '/'));
         $this->compiledPath = sprintf('#^%s$#iU', $compiledPath);
     }
 
